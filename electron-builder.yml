@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: todo-desktop
+appId: com.sirgavarine.todoapp
+productName: To Do App
 directories:
   buildResources: build
 files:
