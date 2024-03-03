@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+
 import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
@@ -10,7 +11,7 @@ function createWindow(): void {
     height: 600,
     show: false,
     minWidth: 1000,
-    minHeight: 500,
+    minHeight: 600,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
