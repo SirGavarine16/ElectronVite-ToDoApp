@@ -23,18 +23,23 @@ const TaskSubmit = (): JSX.Element => {
     setTaskLabel(event.target.value)
   }
 
-  const submitTask = (e: FormEvent): void => {
+  const submitTask = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
-    addTask({
-      id: Date.now(),
-      title: taskLabel,
-      date: selectedCategory === 0 ? dayjs().format('DD/MM/YYYY') : null,
-      notes: null,
-      isImportant: selectedCategory === 1,
-      isDone: false,
-      subtasks: null,
-      createdAt: new Date()
-    })
+
+    try {
+      const task = await window.api.insertTask({
+        title: taskLabel,
+        date: selectedCategory === 0 ? dayjs().format('DD/MM/YYYY') : null,
+        notes: null,
+        isImportant: selectedCategory === 1 ? 1 : 0,
+        isDone: 0,
+        createdAt: Date.now()
+      })
+      if (task) addTask(task)
+    } catch (error) {
+      console.log('Error adding task!', error)
+    }
+
     blurTaskSubmit()
   }
 

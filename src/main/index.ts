@@ -1,8 +1,18 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
 import icon from '../../resources/icon.png?asset'
+import {
+  deleteSubtaskInDatabase,
+  deleteTaskFromDatabase,
+  getAllTasksFromDatabase,
+  insertSubtaskInDatabase,
+  insertTaskInDatabase,
+  setupDatabase,
+  updateSubtaskInDatabase,
+  updateTaskInDatabase
+} from './db'
 
 function createWindow(): void {
   // Create the browser window.
@@ -16,7 +26,8 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      contextIsolation: true
     }
   })
 
@@ -52,8 +63,50 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  setupDatabase()
+
+  ipcMain.handle('get-tasks', async () => {
+    const tasks = await getAllTasksFromDatabase()
+    return tasks
+  })
+
+  ipcMain.handle('add-task', async (_, data) => {
+    const task = await insertTaskInDatabase(data)
+    return task
+  })
+
+  ipcMain.handle('delete-task', async (_, taskId) => {
+    await deleteTaskFromDatabase(taskId)
+  })
+
+  ipcMain.handle('update-task-importance', async (_, taskId, isImportant) => {
+    await updateTaskInDatabase(taskId, { isImportant })
+  })
+
+  ipcMain.handle('update-task-status', async (_, taskId, isDone) => {
+    await updateTaskInDatabase(taskId, { isDone })
+  })
+
+  ipcMain.handle('update-task-date', async (_, taskId, date) => {
+    await updateTaskInDatabase(taskId, { date })
+  })
+
+  ipcMain.handle('update-task-notes', async (_, taskId, notes) => {
+    await updateTaskInDatabase(taskId, { notes })
+  })
+
+  ipcMain.handle('add-subtask', async (_, taskId, title) => {
+    const subtask = await insertSubtaskInDatabase(taskId, title)
+    return subtask
+  })
+
+  ipcMain.handle('update-subtask', async (_, subtaskId, isDone) => {
+    await updateSubtaskInDatabase(subtaskId, isDone)
+  })
+
+  ipcMain.handle('delete-subtask', async (_, subtaskId) => {
+    await deleteSubtaskInDatabase(subtaskId)
+  })
 
   createWindow()
 

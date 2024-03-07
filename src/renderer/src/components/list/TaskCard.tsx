@@ -33,12 +33,23 @@ const TaskCard = ({ data }: TaskCardProps): JSX.Element => {
     toggleTask()
   }
 
-  const handleCheckChange = (event: CheckboxChangeEvent): void => {
-    updateTaskStatus(data.id, event.target.checked)
+  const handleCheckChange = async (event: CheckboxChangeEvent): Promise<void> => {
+    try {
+      const isDone = event.target.checked ? 1 : 0
+      await window.api.updateTaskStatus(data.id, isDone)
+      updateTaskStatus(data.id, isDone)
+    } catch (error) {
+      console.log('Error updating task status!', error)
+    }
   }
 
-  const handleImportantIconClick = (): void => {
-    toggleTaskImportance(data.id)
+  const handleImportantIconClick = async (): Promise<void> => {
+    try {
+      await window.api.updateTaskImportance(data.id, data.isImportant === 1 ? 0 : 1)
+      toggleTaskImportance(data.id, data.isImportant === 1 ? 0 : 1)
+    } catch (error) {
+      console.log('Error updating task importance!', error)
+    }
   }
 
   return (
@@ -54,7 +65,7 @@ const TaskCard = ({ data }: TaskCardProps): JSX.Element => {
                 <Typography.Text>My Day</Typography.Text>
               </div>
             ) : null}
-            {data.subtasks ? (
+            {data.subtasks.length > 0 ? (
               <div>
                 {isDaily ? (
                   <Typography.Text className="task-card__extra-data-div">{'-'}</Typography.Text>
@@ -77,7 +88,7 @@ const TaskCard = ({ data }: TaskCardProps): JSX.Element => {
         </div>
       </div>
       <div className="task-card__checkbox-wrapper">
-        <Checkbox checked={data.isDone} onChange={handleCheckChange} />
+        <Checkbox checked={Boolean(data.isDone)} onChange={handleCheckChange} />
       </div>
       <div className="task-card__star-wrapper">
         {data.isImportant ? (

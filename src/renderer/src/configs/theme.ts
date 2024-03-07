@@ -17,13 +17,11 @@ const MainTheme: ThemeConfig = {
       defaultBorderColor: '#2c2c2c',
       defaultActiveColor: 'white',
       defaultHoverBorderColor: 'white',
-      defaultHoverColor: 'white'
+      defaultHoverColor: 'white',
+      defaultActiveBorderColor: 'white'
     },
     Input: {
       colorTextPlaceholder: '#414141'
-    },
-    Modal: {
-      colorBgBase: 'thistle'
     }
   }
 }

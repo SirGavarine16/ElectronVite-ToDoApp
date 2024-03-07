@@ -13,6 +13,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
 import { useAppStore } from '@renderer/hooks'
+import { CheckboxChangeEvent } from 'antd/es/checkbox'
 
 dayjs.extend(relativeTime)
 
@@ -29,12 +30,12 @@ const TaskOverview = (): JSX.Element => {
     setSelectedTask,
     toggleTaskImportance,
     tasks,
-    toggleDailyTask,
+    updateTaskDate,
     deleteTask,
-    updateTaskNote,
+    updateTaskNotes,
     addSubtask,
-    deleteSubtask,
-    toggleSubtaskStatus
+    updateSubtask,
+    deleteSubtask
   } = useAppStore((state) => state)
 
   const currentTask = tasks.find((task) => task.id === selectedTask) || null
@@ -59,28 +60,53 @@ const TaskOverview = (): JSX.Element => {
     toggleTask()
   }
 
-  const handleImportantIconClick = (): void => {
+  const handleImportantIconClick = async (): Promise<void> => {
     if (currentTask) {
-      toggleTaskImportance(currentTask.id)
+      try {
+        await window.api.updateTaskImportance(currentTask.id, currentTask.isImportant === 1 ? 0 : 1)
+        toggleTaskImportance(currentTask.id, currentTask.isImportant === 1 ? 0 : 1)
+      } catch (error) {
+        console.log('Error updating task importance!', error)
+      }
     }
   }
 
-  const handleDailyClick = (): void => {
+  const updateCurrentDate = async (): Promise<void> => {
     if (currentTask) {
-      toggleDailyTask(currentTask.id)
+      const date = dayjs().format('DD/MM/YYYY')
+      await window.api.updateTaskDate(currentTask.id, date)
+      updateTaskDate(currentTask.id, date)
     }
   }
 
-  const submitNotes = (): void => {
+  const removeCurrentDate = async (): Promise<void> => {
     if (currentTask) {
-      updateTaskNote(currentTask.id, notes)
+      await window.api.updateTaskDate(currentTask.id, null)
+      updateTaskDate(currentTask.id, null)
     }
   }
 
-  const submitSubtask = (event: FormEvent): void => {
+  const submitNotes = async (): Promise<void> => {
+    if (currentTask) {
+      try {
+        const taskNotes = notes.trim().length > 0 ? notes.trim() : null
+        await window.api.updateTaskNotes(currentTask.id, taskNotes)
+        updateTaskNotes(currentTask.id, taskNotes)
+      } catch (error) {
+        console.log('Error updating task notes!', error)
+      }
+    }
+  }
+
+  const submitSubtask = async (event: FormEvent): Promise<void> => {
     event.preventDefault()
     if (currentTask) {
-      addSubtask(currentTask.id, subtaskLabel)
+      try {
+        const subtask = await window.api.insertSubtask(currentTask.id, subtaskLabel)
+        if (subtask) addSubtask(currentTask.id, subtask)
+      } catch (error) {
+        console.log('Error adding subtask!', error)
+      }
     }
     setSubtaskLabel('')
   }
@@ -88,11 +114,42 @@ const TaskOverview = (): JSX.Element => {
   const openModal = (): void => setModalOpen(true)
   const closeModal = (): void => setModalOpen(false)
 
-  const deleteCurrentTask = (): void => {
+  const deleteCurrentTask = async (): Promise<void> => {
     if (currentTask) {
       toggleTask()
-      deleteTask(currentTask.id)
+      try {
+        await window.api.deleteTask(currentTask.id)
+        deleteTask(currentTask.id)
+      } catch (error) {
+        console.log('Error deleting task!', error)
+      }
       setSelectedTask(null)
+    }
+  }
+
+  const handleSubtaskCheckClick = async (
+    event: CheckboxChangeEvent,
+    subtaskId: number
+  ): Promise<void> => {
+    if (currentTask) {
+      try {
+        const isDone = event.target.checked ? 1 : 0
+        await window.api.updateSubtask(subtaskId, isDone)
+        updateSubtask(currentTask.id, subtaskId, isDone)
+      } catch (error) {
+        console.log('Error updating subtask!', error)
+      }
+    }
+  }
+
+  const handleDeleteSubtaskClick = async (subtaskId: number): Promise<void> => {
+    if (currentTask) {
+      try {
+        await window.api.deleteSubtask(subtaskId)
+        deleteSubtask(currentTask.id, subtaskId)
+      } catch (error) {
+        console.log('Error deleting subtask!', error)
+      }
     }
   }
 
@@ -121,21 +178,19 @@ const TaskOverview = (): JSX.Element => {
             <div className="task-overview__subtasks-wrapper">
               {currentTask.subtasks ? (
                 <div className="task-overview__subtasks-list">
-                  {currentTask.subtasks.map(({ title, isDone }, subtaskIndex) => (
-                    <div key={subtaskIndex} className="task-overview__subtask-card">
+                  {currentTask.subtasks.map(({ id, title, isDone }) => (
+                    <div key={id} className="task-overview__subtask-card">
                       <div>
                         <Checkbox
-                          checked={isDone}
+                          checked={Boolean(isDone)}
                           className="task-overview__subtask-card-check"
-                          onChange={(e) =>
-                            toggleSubtaskStatus(currentTask.id, subtaskIndex, e.target.checked)
-                          }
+                          onChange={(e) => handleSubtaskCheckClick(e, id)}
                         />
                         <Typography.Text className="task-overview__subtask-card-label">
                           {title}
                         </Typography.Text>
                       </div>
-                      <DeleteOutlined onClick={() => deleteSubtask(currentTask.id, subtaskIndex)} />
+                      <DeleteOutlined onClick={() => handleDeleteSubtaskClick(id)} />
                     </div>
                   ))}
                 </div>
@@ -157,13 +212,13 @@ const TaskOverview = (): JSX.Element => {
           <Row className="task-overview__daily-wrapper">
             <div
               className={`task-overview__daily-content ${isDaily ? '' : 'task-overview__daily-content--clickable'}`}
-              onClick={!isDaily ? handleDailyClick : undefined}
+              onClick={!isDaily ? updateCurrentDate : undefined}
             >
               <SunOutlined className="task-overview__daily-icon" />
               <Typography.Text>{isDaily ? 'Added to My Day' : 'Add to My Day'}</Typography.Text>
             </div>
             {isDaily ? (
-              <div className="task-overview__daily-close-button" onClick={handleDailyClick}>
+              <div className="task-overview__daily-close-button" onClick={removeCurrentDate}>
                 <CloseOutlined className="task-overview__daily-close-button-icon" />
               </div>
             ) : null}

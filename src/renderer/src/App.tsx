@@ -2,16 +2,30 @@ import { useEffect } from 'react'
 import { Col, Row } from 'antd'
 
 import { useAppStore } from '@renderer/hooks'
-import { Sidebar } from './components/sidebar'
-import { Header } from './components/header'
-import { TaskList, TaskSubmit } from './components/list'
-import { TaskOverview } from './components/overview'
+import { Sidebar } from '@renderer/components/sidebar'
+import { Header } from '@renderer/components/header'
+import { TaskList, TaskSubmit } from '@renderer/components/list'
+import { TaskOverview } from '@renderer/components/overview'
 
 function App(): JSX.Element {
-  const { isTaskOpen, tasks } = useAppStore((state) => state)
+  const { isTaskOpen, setTasks, tasks } = useAppStore((state) => state)
+
+  const fetchAllTasks = async (): Promise<void> => {
+    try {
+      const response = await window.api.getAllTasks()
+      setTasks(response)
+    } catch (error) {
+      console.log('Error fetching tasks!', error)
+      setTasks([])
+    }
+  }
 
   useEffect(() => {
-    console.log('Update!', tasks)
+    fetchAllTasks()
+  }, [])
+
+  useEffect(() => {
+    console.log('TASKS =>', tasks)
   }, [tasks])
 
   return (

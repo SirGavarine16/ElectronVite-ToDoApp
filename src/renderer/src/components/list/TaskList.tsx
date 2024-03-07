@@ -6,7 +6,7 @@ import TaskCard from './TaskCard'
 import { useAppStore, useTasksStore } from '@renderer/hooks'
 
 const TaskList = (): JSX.Element => {
-  const [isCompletedListOpen, setCompletedListOpen] = useState(false)
+  const [isCompletedListOpen, setCompletedListOpen] = useState(true)
 
   const { selectedCategory } = useAppStore((state) => state)
   const { allTasks, dailyTasks, importantTasks } = useTasksStore()

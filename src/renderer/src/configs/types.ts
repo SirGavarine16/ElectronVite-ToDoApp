@@ -1,6 +1,7 @@
-export type SubTask = {
+export type Subtask = {
+  id: number
   title: string
-  isDone: boolean
+  isDone: 1 | 0
 }
 
 export type Task = {
@@ -8,8 +9,8 @@ export type Task = {
   title: string
   date: string | null
   notes: string | null
-  isImportant: boolean
-  isDone: boolean
-  subtasks: SubTask[] | null
-  createdAt: Date
+  isImportant: 1 | 0
+  isDone: 1 | 0
+  createdAt: number
+  subtasks: Subtask[]
 }
